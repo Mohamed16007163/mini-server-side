@@ -1,0 +1,12 @@
+{
+  "name": "mini-server-side",
+  "version": "1.0.0",
+  "description": "A minimal Node.js backend with JSON API endpoints, backed by Postgres.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.5"
+  }
+}
