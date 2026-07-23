@@ -1,9 +1,7 @@
 const http = require('http');
-const PostgresNotesRepository = require('./repositories/postgresNotesRepository');
+const SqliteTasksRepository = require('./repositories/sqliteTasksRepository');
 
-// This is the ONE line that changed from the in-memory version.
-// Everything below never needed to know or care which repository this is.
-const notesRepository = new PostgresNotesRepository(process.env.DATABASE_URL);
+const tasksRepository = new SqliteTasksRepository(process.env.SQLITE_FILE || 'tasks.db');
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -18,48 +16,100 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   try {
+    // GET /
     if (req.url === '/' && req.method === 'GET') {
       res.statusCode = 200;
-      res.end(JSON.stringify({ message: 'Hello, world! my Name is Mohamed' }));
+      res.end(JSON.stringify({ message: 'Hello, Mohamed!' }));
       return;
     }
 
-    if (req.url === '/time' && req.method === 'GET') {
+    // GET /tasks
+    if (req.url === '/tasks' && req.method === 'GET') {
+      const tasks = await tasksRepository.findAll();
       res.statusCode = 200;
-      res.end(JSON.stringify({ time: new Date().toISOString() }));
+      res.end(JSON.stringify({ tasks }));
       return;
     }
 
-    if (req.url === '/notes' && req.method === 'GET') {
-      const notes = await notesRepository.findAll();
+    // GET /tasks/:id
+    if (req.url.startsWith('/tasks/') && req.method === 'GET') {
+      const id = parseInt(req.url.split('/')[2], 10);
+      const task = await tasksRepository.findById(id);
+      if (!task) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ error: 'Task not found' }));
+        return;
+      }
       res.statusCode = 200;
-      res.end(JSON.stringify({ notes }));
+      res.end(JSON.stringify({ task }));
       return;
     }
 
-    if (req.url === '/notes' && req.method === 'POST') {
+    // POST /tasks
+    if (req.url === '/tasks' && req.method === 'POST') {
       const raw = await readBody(req);
-      let text;
+      let title;
       try {
-        text = JSON.parse(raw || '{}').text;
+        title = JSON.parse(raw || '{}').title;
       } catch {
         res.statusCode = 400;
         res.end(JSON.stringify({ error: 'Invalid JSON body' }));
         return;
       }
 
-      if (!text || typeof text !== 'string') {
+      if (!title || typeof title !== 'string') {
         res.statusCode = 400;
-        res.end(JSON.stringify({ error: '"text" (string) is required' }));
+        res.end(JSON.stringify({ error: '"title" (string) is required' }));
         return;
       }
 
-      const note = await notesRepository.create(text);
+      const task = await tasksRepository.create(title);
       res.statusCode = 201;
-      res.end(JSON.stringify({ note }));
+      res.end(JSON.stringify({ task }));
       return;
     }
 
+    // PUT /tasks/:id
+    if (req.url.startsWith('/tasks/') && req.method === 'PUT') {
+      const id = parseInt(req.url.split('/')[2], 10);
+      const raw = await readBody(req);
+      let body;
+      try {
+        body = JSON.parse(raw || '{}');
+      } catch {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+        return;
+      }
+
+      const updated = await tasksRepository.update(id, body.title, body.done);
+      if (!updated) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ error: 'Task not found' }));
+        return;
+      }
+
+      res.statusCode = 200;
+      res.end(JSON.stringify({ task: updated }));
+      return;
+    }
+
+    // DELETE /tasks/:id
+    if (req.url.startsWith('/tasks/') && req.method === 'DELETE') {
+      const id = parseInt(req.url.split('/')[2], 10);
+      const deleted = await tasksRepository.delete(id);
+      if (!deleted) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ error: 'Task not found' }));
+        return;
+      }
+
+      res.statusCode = 200;
+      res.end(JSON.stringify({ message: 'Task deleted' }));
+      return;
+    }
+
+    // Fallback
     res.statusCode = 404;
     res.end(JSON.stringify({ error: 'Not found' }));
   } catch (err) {
