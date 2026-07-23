@@ -1,65 +1,38 @@
-# mini-server-side
+# Task API with SQLite
 
-A minimal Node.js backend with JSON API endpoints, backed by Postgres and
-run via Docker Compose.
+A simple CRUD API for managing tasks, built with Node.js and SQLite. Tasks are stored persistently in a SQLite database file, so they survive server restarts.
 
-## Endpoints
+## Why SQLite?
 
-- `GET /` — hello message
-- `GET /time` — current server time
-- `GET /notes` — list all notes
-- `POST /notes` — create a note, body: `{ "text": "..." }`
+SQLite is a lightweight, file‑based database that requires no separate server process. It's perfect for small projects, prototyping, or when you want a zero‑configuration database. The entire database is stored in a single file (`tasks.db`), making it easy to backup or move.
 
-## Architecture
+## How to start
 
-`src/repositories/notesRepository.js` defines the storage interface
-(`create`, `findAll`). Two implementations exist:
+1. Clone the repository.
+2. Install dependencies:  
+   `npm install`
+3. Start the server:  
+   `npm start`
+4. The API will be available at `http://localhost:3000`.
 
-- `inMemoryNotesRepository.js` — data lives in process memory, lost on restart
-- `postgresNotesRepository.js` — data lives in Postgres, survives restarts
+The database file `tasks.db` will be created automatically in the project root on first run. The `tasks` table is also created if it doesn't exist, and three sample tasks are inserted only once.
 
-`src/server.js` only depends on the interface. Swapping which
-implementation is used is a **one-line change** at the top of
-`src/server.js` — the routes and service logic never change.
+## API Endpoints
 
-## Run it
+| Method | Endpoint           | Description                        |
+|--------|--------------------|------------------------------------|
+| GET    | /tasks             | List all tasks                     |
+| GET    | /tasks/:id         | Get a single task by ID            |
+| POST   | /tasks             | Create a new task (body: `{"title":"..."}`) |
+| PUT    | /tasks/:id         | Update a task (body: `{"title":"...", "done": true/false}`) |
+| DELETE | /tasks/:id         | Delete a task                      |
 
-1. Copy the env template:
-   ```
-   cp .env.example .env
-   ```
-2. Start everything (app + Postgres) with one command:
-   ```
-   docker compose up --build
-   ```
-3. The API is now live at `http://localhost:3000`.
+All responses are JSON. Unknown IDs return `404`, invalid requests return `400`.
 
-## Prove persistence
+## Example SQL Queries
 
-```bash
-# 1. Create a note
-curl -X POST http://localhost:3000/notes \
-  -H "Content-Type: application/json" \
-  -d '{"text":"survives a restart"}'
+Here's an example SQL query I ran manually using a SQLite viewer (e.g., DB Browser for SQLite):
 
-# 2. Confirm it's there
-curl http://localhost:3000/notes
-
-# 3. Restart everything
-docker compose down
-docker compose up -d
-
-# 4. Confirm the note is STILL there
-curl http://localhost:3000/notes
-```
-
-If the note from step 1 is still returned in step 4, data survived a full
-container + app restart — proof that storage is real (Postgres + a Docker
-volume), not just in-memory.
-
-## Notes
-
-- `.env` is gitignored; `.env.example` is the committed template.
-- The Postgres volume (`db_data`) is what makes data survive
-  `docker compose down` — removing the volume with
-  `docker compose down -v` will wipe it, as expected.
+```sql
+-- List all completed tasks
+SELECT * FROM tasks WHERE done = 1;
