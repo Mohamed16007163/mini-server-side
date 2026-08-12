@@ -49,11 +49,20 @@ class SqliteTasksRepository {
       .get(id);
   }
 
-  async update(id, title, done) {
+ async update(id, title, done) {
     const stmt = this.db.prepare(
       'UPDATE tasks SET title = COALESCE(?, title), done = COALESCE(?, done) WHERE id = ?'
     );
-    const info = stmt.run(title, done, id);
+    // SQLite bind parameters accept null, numbers, strings and buffers —
+    // NOT `undefined` and NOT JS booleans. A partial PUT body (e.g. only
+    // `{ "title": "..." }`) leaves the other field `undefined`, and
+    // `{ "done": true }` sends a real boolean, both of which better-sqlite3
+    // rejects with "Provided value cannot be bound to SQLite parameter".
+    // Normalize both fields before binding: missing -> null (COALESCE
+    // keeps the existing value), boolean -> 0/1.
+    const titleValue = title === undefined ? null : title;
+    const doneValue = done === undefined ? null : done ? 1 : 0;
+    const info = stmt.run(titleValue, doneValue, id);
     if (info.changes === 0) return null;
     return this.findById(id);
   }

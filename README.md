@@ -29,10 +29,22 @@ The database file `tasks.db` will be created automatically in the project root o
 
 All responses are JSON. Unknown IDs return `404`, invalid requests return `400`.
 
+## Where the database lives
+
+`tasks.db` (plus its `-shm`/`-wal` journal files, since WAL mode is enabled) is created in the project root the first time the server runs. These files are runtime data, not source code, so they're git-ignored rather than committed — anyone cloning the repo gets a fresh database automatically on first `npm start`.
+
 ## Example SQL Queries
 
-Here's an example SQL query I ran manually using a SQLite viewer (e.g., DB Browser for SQLite):
+Example queries run manually against `tasks.db` using DB Browser for SQLite:
 
 ```sql
 -- List all completed tasks
 SELECT * FROM tasks WHERE done = 1;
+
+-- Count all tasks
+SELECT COUNT(*) FROM tasks;
+```
+
+## Database viewer screenshot
+
+_TODO: add a screenshot of `tasks.db` open in DB Browser for SQLite here, e.g. `![tasks table in DB Browser](./docs/db-screenshot.png)`._
