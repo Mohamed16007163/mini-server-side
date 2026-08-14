@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const supabase = require('./config/supabaseClient');
 const requireAuth = require('./middleware/authMiddleware');
+const swaggerUi = require('swagger-ui-express');
+const openapiSpec = require('../openapi.json');
 
 const app = express();
 app.use(express.json());
@@ -66,6 +68,8 @@ app.post('/auth/login', async (req, res) => {
     user: data.user
   });
 });
+// Swagger docs
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 // POST /auth/logout
 app.post('/auth/logout', requireAuth, async (req, res) => {
