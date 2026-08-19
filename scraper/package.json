@@ -1,0 +1,16 @@
+{
+  "name": "polite-scraper",
+  "version": "1.0.0",
+  "description": "A small, polite scraper that turns Books to Scrape into clean, validated JSON.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check-robots": "node src/checkTarget.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "zod": "^3.23.8"
+  }
+}
