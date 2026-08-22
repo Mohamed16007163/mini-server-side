@@ -4,9 +4,12 @@ const supabase = require('./config/supabaseClient');
 const requireAuth = require('./middleware/authMiddleware');
 const swaggerUi = require('swagger-ui-express');
 const openapiSpec = require('../openapi.json');
+const ticketTriageRouter = require('./routes/ticketTriage.route');
+
 
 const app = express();
 app.use(express.json());
+app.use(ticketTriageRouter);
 
 const PORT = process.env.PORT || 4000;
 
