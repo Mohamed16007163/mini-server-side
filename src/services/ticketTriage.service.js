@@ -30,10 +30,10 @@ function sleep(ms) {
  * validate against the schema. Throws a tagged error if anything
  * along the way is retryable.
  */
-async function attemptTriage(message) {
+async function attemptTriage(message, callModel) {
   let raw;
   try {
-    raw = await callGroqModel(message);
+    raw = await callModel(message);
   } catch (err) {
     throw err; // network/timeout/status errors are already tagged
   }
@@ -62,13 +62,15 @@ async function attemptTriage(message) {
  * gives up immediately on non-retryable ones, and always returns
  * either a validated triage result or a clear, typed failure.
  */
-async function triageTicket(message) {
+async function triageTicket(message, { callModel = callGroqModel } = {}) {
   let lastError;
+  let attemptsMade = 0;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    attemptsMade = attempt + 1;
     try {
-      const data = await attemptTriage(message);
-      return { ok: true, data, attempts: attempt + 1 };
+      const data = await attemptTriage(message, callModel);
+      return { ok: true, data, attempts: attemptsMade };
     } catch (err) {
       lastError = err;
       if (!isRetryable(err) || attempt === MAX_RETRIES) break;
@@ -80,7 +82,7 @@ async function triageTicket(message) {
     ok: false,
     error: lastError.message,
     retryable: isRetryable(lastError),
-    attempts: MAX_RETRIES + 1,
+    attempts: attemptsMade,
   };
 }
 

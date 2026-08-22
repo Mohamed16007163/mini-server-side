@@ -1,5 +1,5 @@
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'openai/gpt-oss-120b'; // replaces the deprecated llama-3.3-70b-versatile
 const TIMEOUT_MS = 8000;
 
 const SYSTEM_PROMPT = `You are a support ticket triage assistant. Given a customer message, classify it.
@@ -29,7 +29,7 @@ async function callGroqModel(ticketMessage) {
         Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: MODEL,
+        model:'openai/gpt-oss-120b',
         response_format: { type: 'json_object' },
         temperature: 0.2,
         messages: [
